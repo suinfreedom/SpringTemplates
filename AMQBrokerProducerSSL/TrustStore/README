@@ -1,0 +1,2 @@
+broker:
+/opt/apache-artemis-2.33.0.redhat-00010/bin/one_way_tls_broker

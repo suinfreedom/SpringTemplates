@@ -1,0 +1,42 @@
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+    <bean id="brokerTransactionManager" class="org.springframework.transaction.jta.JtaTransactionManager">
+        <property name="transactionManager" ref="narayanaTransactionManager" />
+        <property name="userTransaction" ref="narayanaUserTransaction" />
+    </bean>
+
+    <bean id="narayanaTransactionManager" class="com.arjuna.ats.jta.TransactionManager" factory-method="transactionManager"/>
+    <bean id="narayanaUserTransaction" class="com.arjuna.ats.jta.UserTransaction" factory-method="userTransaction"/>
+
+    <bean id="brokerConnectionFactory" class="org.messaginghub.pooled.jms.JmsPoolJcaConnectionFactory" primary="true">
+        <property name="connectionFactory" ref="baseConnectionFactory"/>
+        <property name="maxConnections" value="10"/>
+        <property name="transactionManager" ref="narayanaTransactionManager"/>
+        <property name="connectionIdleTimeout" value="3600000"/>
+    </bean>
+
+    <bean id="baseConnectionFactory" class="org.apache.activemq.artemis.jms.client.ActiveMQXAConnectionFactory">
+        <constructor-arg index="0" value="${amq.servicename}?sslEnabled=${amq.ssl.enabled}&amp;verifyHost=false&amp;trustStorePath=${amq.ssl.truststore}&amp;trustStorePassword=${amq.ssl.truststore-pwd}&amp;reconnectAttempts=0"/>
+        <constructor-arg index="1" value="${amq.username}"/>
+        <constructor-arg index="2" value="${amq.password}"/>
+        <property name="callTimeout" value="${amq.call-timeout:45000}" />
+        <property name="consumerWindowSize" value="${amq.consumer-window-size:0}"/>
+        <property name="useTopologyForLoadBalancing" value="false"/>
+        <property name="reconnectAttempts" value="0"/>
+    </bean>
+
+    <bean id="activemq" class="org.apache.camel.component.jms.JmsComponent">
+        <property name="acceptMessagesWhileStopping" value="true"/>
+        <property name="cacheLevelName" value="CACHE_NONE"/>
+        <property name="connectionFactory" ref="brokerConnectionFactory"/>
+        <property name="maxMessagesPerTask" value="10"/>
+
+        <property name="transacted" value="false"/>
+        <property name="lazyCreateTransactionManager" value="false"/>
+        <property name="transactionManager" ref="brokerTransactionManager"/>
+    </bean>
+
+
+</beans>
